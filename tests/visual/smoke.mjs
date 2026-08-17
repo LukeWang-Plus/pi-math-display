@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadExtensions } from "./node_modules/@earendil-works/pi-coding-agent/dist/core/extensions/loader.js";
@@ -12,6 +13,17 @@ const repositoryRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "../..",
 );
+const itermProfile = JSON.parse(
+  readFileSync(
+    resolve(repositoryRoot, "tests/visual/config/iterm2.json"),
+    "utf8",
+  ),
+).Profiles?.[0];
+assert.equal(itermProfile?.Guid, "math-visual-iterm2-profile");
+assert.equal(itermProfile?.Columns, 150);
+assert.equal(itermProfile?.Rows, 44);
+assert.equal(itermProfile?.["Close Sessions On End"], 1);
+
 process.env.TERM_PROGRAM = "kitty";
 process.env.TERM = "xterm-kitty";
 delete process.env.WEZTERM_PANE;

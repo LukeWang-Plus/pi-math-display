@@ -1,0 +1,85 @@
+{
+  "Profiles": [
+    {
+      "Name": "math-visual",
+      "Guid": "math-visual-iterm2-profile",
+      "Custom Command": "No",
+      "Command": "",
+      "Custom Directory": "No",
+      "Columns": 150,
+      "Rows": 44,
+      "Normal Font": "Menlo-Regular 14",
+      "Non Ascii Font": "Menlo-Regular 14",
+      "Use Non-ASCII Font": false,
+      "ASCII Anti Aliased": true,
+      "Non-ASCII Anti Aliased": true,
+      "Background Color": {
+        "Alpha Component": 1,
+        "Blue Component": 0.09019607843137255,
+        "Color Space": "sRGB",
+        "Green Component": 0.06666666666666667,
+        "Red Component": 0.050980392156862744
+      },
+      "Foreground Color": {
+        "Alpha Component": 1,
+        "Blue Component": 0.9882352941176471,
+        "Color Space": "sRGB",
+        "Green Component": 0.9647058823529412,
+        "Red Component": 0.9411764705882353
+      },
+      "Bold Color": {
+        "Alpha Component": 1,
+        "Blue Component": 0.9882352941176471,
+        "Color Space": "sRGB",
+        "Green Component": 0.9647058823529412,
+        "Red Component": 0.9411764705882353
+      },
+      "Cursor Color": {
+        "Alpha Component": 1,
+        "Blue Component": 0.9882352941176471,
+        "Color Space": "sRGB",
+        "Green Component": 0.9647058823529412,
+        "Red Component": 0.9411764705882353
+      },
+      "Cursor Text Color": {
+        "Alpha Component": 1,
+        "Blue Component": 0.09019607843137255,
+        "Color Space": "sRGB",
+        "Green Component": 0.06666666666666667,
+        "Red Component": 0.050980392156862744
+      },
+      "Selection Color": {
+        "Alpha Component": 1,
+        "Blue Component": 0.47058823529411764,
+        "Color Space": "sRGB",
+        "Green Component": 0.30980392156862746,
+        "Red Component": 0.14901960784313725
+      },
+      "Selected Text Color": {
+        "Alpha Component": 1,
+        "Blue Component": 1,
+        "Color Space": "sRGB",
+        "Green Component": 1,
+        "Red Component": 1
+      },
+      "Use Separate Colors for Light and Dark Mode": false,
+      "Window Type": 0,
+      "Screen": -1,
+      "Space": 0,
+      "Disable Window Resizing": false,
+      "Disable Window Resizing by Unfocused Sessions": false,
+      "Prevent Opening in a Tab": true,
+      "Open Toolbelt": false,
+      "Transparency": 0,
+      "Blur": false,
+      "Terminal Type": "xterm-256color",
+      "Silence Bell": true,
+      "Visual Bell": false,
+      "Flashing Bell": false,
+      "Close Sessions On End": 1,
+      "Prompt Before Closing 2": 0,
+      "Unlimited Scrollback": false,
+      "Scrollback Lines": 1000
+    }
+  ]
+}

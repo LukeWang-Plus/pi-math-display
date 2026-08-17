@@ -14,9 +14,11 @@
 | Warp stable     | Ubuntu 24.04 + Xvfb | 截图     | 截图     | 探索性任务 |
 | iTerm2          | macOS 14            | 截图     | 截图     | 探索性任务 |
 
-Warp 与 iTerm2 在 GitHub 托管 runner 上仍可能受到 GUI 会话、辅助功能权限或 GPU 的限制，因此暂时使用 `continue-on-error`。即使任务失败，工作流仍会上传已有日志和诊断截图。
+Warp 与 iTerm2 暂时使用 `continue-on-error`。即使任务失败，工作流仍会上传已有日志和诊断截图。
 
 Warp 截图测试只验证终端渲染，不测试首次启动向导。每次截图都会使用独立、临时的 XDG 目录，并在其中写入 Warp 开源代码所定义的本地 onboarding 完成标记；这些状态不会污染 runner 的真实用户目录，也不会绕过待测的终端绘制路径。
+
+iTerm2 不使用 AppleScript 或辅助功能自动化。每种模式都在独立的临时 `HOME` 中运行，并预设测试所需的 iTerm2 首次启动状态：关闭自动更新、提示和会话恢复，使用固定的 150 × 44 深色动态配置，并将 “Allow Terminal-Initiated Display?” 的固定选择设为 “Yes”。这些设置只存在于临时目录，不修改 runner 或开发者的真实 iTerm2 配置；OSC 1337 图片仍由真实 iTerm2 解析和绘制。
 
 iTerm2 全屏截图中显示原始 LaTeX 是预期行为：Pi 0.84.2 会在全屏 TUI 中禁用 iTerm2 图片协议。其常规模式块公式应正常显示为图片。
 
@@ -119,6 +121,7 @@ tests/visual/
 └── config/
     ├── kitty.conf
     ├── ghostty.conf
+    ├── iterm2.json
     └── wezterm.lua
 ```
 
@@ -126,8 +129,8 @@ tests/visual/
 - `smoke.mjs`：在启动 GUI 前验证扩展加载器与 Pi TUI 使用同一模块实例；
 - `install-linux-terminal.sh`：安装指定终端并记录版本、来源和哈希；Ghostty 使用其官方安装文档列出的 Ubuntu 社区包；
 - `capture-linux.sh`：在 Xvfb/Openbox 中启动真实 Linux 终端并截取窗口；
-- `capture-iterm.sh`：通过 iTerm2 的 `--command` 参数启动测试窗口，并调用 macOS `screencapture`；
-- `config/`：固定字体、字号、颜色和窗口选项。
+- `capture-iterm.sh`：在隔离的 macOS 用户目录中预设无交互配置，通过 iTerm2 的 `--command` 参数启动测试窗口，再调用 `screencapture`；
+- `config/`：固定字体、字号、颜色和窗口选项，包括 iTerm2 动态配置。
 
 ## 供应链约束
 
