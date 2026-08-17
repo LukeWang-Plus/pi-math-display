@@ -14,7 +14,9 @@
 | Warp stable     | Ubuntu 24.04 + Xvfb | 截图     | 截图     | 探索性任务 |
 | iTerm2          | macOS 14            | 截图     | 截图     | 探索性任务 |
 
-Warp 与 iTerm2 在 GitHub 托管 runner 上可能受到首次启动界面、GUI 会话、辅助功能权限或 GPU 的限制，因此暂时使用 `continue-on-error`。即使任务失败，工作流仍会上传已有日志和诊断截图。
+Warp 与 iTerm2 在 GitHub 托管 runner 上仍可能受到 GUI 会话、辅助功能权限或 GPU 的限制，因此暂时使用 `continue-on-error`。即使任务失败，工作流仍会上传已有日志和诊断截图。
+
+Warp 截图测试只验证终端渲染，不测试首次启动向导。每次截图都会使用独立、临时的 XDG 目录，并在其中写入 Warp 开源代码所定义的本地 onboarding 完成标记；这些状态不会污染 runner 的真实用户目录，也不会绕过待测的终端绘制路径。
 
 iTerm2 全屏截图中显示原始 LaTeX 是预期行为：Pi 0.84.2 会在全屏 TUI 中禁用 iTerm2 图片协议。其常规模式块公式应正常显示为图片。
 
@@ -46,13 +48,14 @@ WezTerm 不使用 2024 年的 stable 版本。工作流每次都从官方 GitHub
 
 每个终端依次运行：
 
-1. `regular`：Pi `TuiMainScreen`；
-2. `fullscreen`：Pi `TuiAltScreen`；
-3. 固定窗口为约 1600 × 900 像素；
-4. 等待 fixture 写出 ready 文件；
-5. 捕获真实终端窗口；
-6. 检查截图尺寸和灰度标准差，拒绝空白图；
-7. 上传截图、contact sheet、终端版本、窗口信息、插件元数据及启动日志。
+1. 为该模式建立隔离的配置、缓存、状态和短路径 runtime 目录；
+2. `regular`：Pi `TuiMainScreen`；
+3. `fullscreen`：Pi `TuiAltScreen`；
+4. 固定窗口为约 1600 × 900 像素；
+5. 等待 fixture 写出 ready 文件；
+6. 捕获真实终端窗口；
+7. 检查截图尺寸和灰度标准差，拒绝空白图；
+8. 上传截图、contact sheet、终端版本、窗口信息、插件元数据及启动日志。
 
 ## 首轮人工验收
 
@@ -121,7 +124,7 @@ tests/visual/
 
 - `fixture.mjs`：确定性公式页面和 Pi TUI 驱动程序；
 - `smoke.mjs`：在启动 GUI 前验证扩展加载器与 Pi TUI 使用同一模块实例；
-- `install-linux-terminal.sh`：从官方渠道安装指定终端并记录版本、来源和哈希；
+- `install-linux-terminal.sh`：安装指定终端并记录版本、来源和哈希；Ghostty 使用其官方安装文档列出的 Ubuntu 社区包；
 - `capture-linux.sh`：在 Xvfb/Openbox 中启动真实 Linux 终端并截取窗口；
 - `capture-iterm.sh`：通过 AppleScript 启动 iTerm2 并调用 macOS `screencapture`；
 - `config/`：固定字体、字号、颜色和窗口选项。
@@ -129,7 +132,8 @@ tests/visual/
 ## 供应链约束
 
 - Node 依赖固定为 Pi 0.84.2，并从 `https://registry.npmjs.org/` 安装；
-- Kitty、Ghostty、WezTerm 和 Warp 只从各自官方发布渠道获取；
+- Kitty、WezTerm 和 Warp 从各自官方发布渠道获取；
+- Ghostty 官方不提供 Linux 二进制，工作流使用其官方安装文档列出的 `ghostty-ubuntu` 社区包，并固定版本与 SHA-256；
 - WezTerm nightly 使用官方 `.sha256` 校验；
 - GitHub Actions 均固定到具体 commit SHA；
 - 工作流权限只有 `contents: read`；

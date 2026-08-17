@@ -760,6 +760,6 @@ Resvg 的 `initWasm()` 只能对同一个 glue 模块初始化一次，实现时
 - shutdown 后原始 `Markdown.prototype.render` 与 `ProcessTerminal.prototype.write` 恢复；
 - 不注册 `/math-render` 或其他命令。
 
-当前终端兼容验证均为本地协议、布局、像素和 Pi `TuiAltScreen` 输出自动化测试，暂未进行 Kitty、Ghostty、Warp 或 iTerm2 的真实终端截图测试。
+当前终端兼容验证同时包含本地协议、布局、像素和 Pi `TuiAltScreen` 输出自动化测试，以及 GitHub Actions 中的 Kitty、Ghostty、WezTerm nightly、Warp 与 iTerm2 真实终端截图流程。截图目前用于人工审核，尚未建立自动视觉基线。
 
 `.vendor-build/` 当前按要求继续保留，用于后续二次开发和回归测试；只有在用户明确要求清理时才删除。正式运行所需文件仍只有第 2 节列出的四个文件。

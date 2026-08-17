@@ -27,11 +27,22 @@ case "$terminal_name" in
 
   ghostty)
     version=1.3.1
-    source="github:ghostty-org/ghostty/v${version}"
-    printf 'source=%s\nversion=%s\n' "$source" "$version" >>"$metadata_file"
-    nix build --accept-flake-config --no-write-lock-file "$source" \
-      --out-link "$tools_dir/ghostty-result"
-    terminal_bin="$tools_dir/ghostty-result/bin/ghostty"
+    package_release=1.3.1-0-ppa2
+    package_name="ghostty_1.3.1-0.ppa2_amd64_24.04.deb"
+    deb="$tools_dir/$package_name"
+    url="https://github.com/mkasberg/ghostty-ubuntu/releases/download/${package_release}/${package_name}"
+    expected=478d440153ef544426418efc7d6d8901715359f452c46be29071901a94b8cd47
+    {
+      printf 'source=%s\n' "$url"
+      printf 'version=%s\npackage_release=%s\n' "$version" "$package_release"
+      printf 'packaging=ghostty-ubuntu community package listed by https://ghostty.org/docs/install/binary\n'
+      printf 'expected_sha256=%s\n' "$expected"
+    } >>"$metadata_file"
+    curl --fail --location --retry 5 --retry-all-errors "$url" --output "$deb"
+    printf '%s  %s\n' "$expected" "$deb" | sha256sum --check -
+    record_file "$deb"
+    sudo apt-get install --yes "$deb"
+    terminal_bin=$(command -v ghostty)
     ;;
 
   wezterm)
