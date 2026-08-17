@@ -126,7 +126,7 @@ tests/visual/
 - `smoke.mjs`：在启动 GUI 前验证扩展加载器与 Pi TUI 使用同一模块实例；
 - `install-linux-terminal.sh`：安装指定终端并记录版本、来源和哈希；Ghostty 使用其官方安装文档列出的 Ubuntu 社区包；
 - `capture-linux.sh`：在 Xvfb/Openbox 中启动真实 Linux 终端并截取窗口；
-- `capture-iterm.sh`：通过 AppleScript 启动 iTerm2 并调用 macOS `screencapture`；
+- `capture-iterm.sh`：通过 iTerm2 的 `--command` 参数启动测试窗口，并调用 macOS `screencapture`；
 - `config/`：固定字体、字号、颜色和窗口选项。
 
 ## 供应链约束

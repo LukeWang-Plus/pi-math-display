@@ -12,7 +12,8 @@ metadata_file="$artifact_dir/${mode}.json"
 screenshot="$artifact_dir/${mode}.png"
 wrapper="$artifact_dir/run-${mode}.sh"
 launcher_log="$artifact_dir/${mode}-launcher.log"
-window_id=
+iterm_bin=/Applications/iTerm.app/Contents/MacOS/iTerm2
+iterm_pid=
 rm -f "$ready_file" "$done_file" "$metadata_file" "$screenshot" "$launcher_log"
 
 cat >"$wrapper" <<EOF
@@ -31,44 +32,21 @@ chmod +x "$wrapper"
 
 cleanup() {
   touch "$done_file" 2>/dev/null || true
-  if [[ -n ${window_id:-} ]]; then
-    osascript - "$window_id" <<'APPLESCRIPT' >/dev/null 2>&1 || true
-on run argv
-  set targetWindowId to (item 1 of argv) as integer
-  tell application "/Applications/iTerm.app"
-    repeat with candidateWindow in windows
-      if id of candidateWindow is targetWindowId then
-        close candidateWindow
-        exit repeat
-      end if
-    end repeat
-  end tell
-end run
-APPLESCRIPT
+  if [[ -n ${iterm_pid:-} ]]; then
+    kill "$iterm_pid" 2>/dev/null || true
+    for _ in $(seq 1 30); do
+      kill -0 "$iterm_pid" 2>/dev/null || break
+      sleep 0.1
+    done
+    kill -KILL "$iterm_pid" 2>/dev/null || true
+    wait "$iterm_pid" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT
 
-if ! window_id=$(osascript - "$wrapper" <<'APPLESCRIPT' 2>"$launcher_log"
-on run argv
-  set launchCommand to quoted form of (item 1 of argv)
-  tell application "/Applications/iTerm.app"
-    set testWindow to (create window with default profile command launchCommand)
-    try
-      set bounds of testWindow to {20, 40, 1620, 940}
-    end try
-    select testWindow
-    activate
-    return id of testWindow
-  end tell
-end run
-APPLESCRIPT
-); then
-  screencapture -x "$artifact_dir/${mode}-diagnostic-screen.png" || true
-  cat "$launcher_log" >&2 || true
-  exit 1
-fi
-printf 'native_window_id=%s\n' "$window_id" >>"$launcher_log"
+printf 'launch=%q %q\n' "$iterm_bin" "--command=$wrapper" >"$launcher_log"
+"$iterm_bin" "--command=$wrapper" >>"$launcher_log" 2>&1 &
+iterm_pid=$!
 
 for _ in $(seq 1 900); do
   [[ ! -f $ready_file ]] || break
@@ -80,27 +58,12 @@ if [[ ! -f $ready_file ]]; then
   exit 1
 fi
 
+# LaunchServices can activate the already-running app without Apple Events,
+# avoiding the hosted runner's interactive Automation permission dialog.
+open -a iTerm >>"$launcher_log" 2>&1 || true
 sleep 1
-bounds=$(osascript - "$window_id" <<'APPLESCRIPT' 2>/dev/null || true
-on run argv
-  set targetWindowId to (item 1 of argv) as integer
-  tell application "/Applications/iTerm.app"
-    repeat with candidateWindow in windows
-      if id of candidateWindow is targetWindowId then
-        return bounds of candidateWindow
-      end if
-    end repeat
-  end tell
-end run
-APPLESCRIPT
-)
-printf 'bounds=%s\n' "$bounds" >"$artifact_dir/${mode}-window.txt"
-
-# Prefer the exact native window surface. The fixed rectangle remains a
-# fallback for hosted macOS runners that reject native-window capture.
-if ! screencapture -x -l "$window_id" "$screenshot" 2>>"$launcher_log"; then
-  screencapture -x -R20,40,1600,900 "$screenshot"
-fi
+printf 'capture=full-display\n' >"$artifact_dir/${mode}-window.txt"
+screencapture -x "$screenshot"
 identify "$screenshot" >"$artifact_dir/${mode}-identify.txt"
 
 read -r width height < <(identify -format '%w %h' "$screenshot")
