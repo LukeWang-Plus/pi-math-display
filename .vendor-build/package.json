@@ -1,0 +1,17 @@
+{
+  "name": "math-vendor-build",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@esbuild/win32-x64": "0.25.12",
+    "esbuild": "0.25.12",
+    "mathjax-full": "3.2.2",
+    "mhchemparser": "4.1.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.84.2",
+    "@earendil-works/pi-tui": "0.84.2",
+    "@types/node": "24.12.4"
+  }
+}

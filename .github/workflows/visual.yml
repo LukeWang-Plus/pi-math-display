@@ -1,0 +1,200 @@
+name: Visual terminal screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "index.ts"
+      - "vendor/**"
+      - ".vendor-build/**"
+      - "tests/visual/**"
+      - ".github/workflows/visual.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  npm_config_registry: https://registry.npmjs.org/
+
+jobs:
+  validate-harness:
+    name: Validate visual harness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.19.0"
+          cache: npm
+          cache-dependency-path: tests/visual/package-lock.json
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install visual-test dependencies
+        run: npm ci --prefix tests/visual --ignore-scripts
+
+      - name: Validate scripts and vendor
+        run: |
+          node --check tests/visual/fixture.mjs
+          node --check tests/visual/smoke.mjs
+          node tests/visual/smoke.mjs
+          tests/visual/node_modules/.bin/tsc -p .vendor-build/tsconfig.json
+          node .vendor-build/integration.mjs
+          bash -n tests/visual/install-linux-terminal.sh
+          bash -n tests/visual/capture-linux.sh
+          bash -n tests/visual/capture-iterm.sh
+          node .vendor-build/vendor-check.cjs
+
+  linux-terminals:
+    name: ${{ matrix.terminal }} · real pixels
+    needs: validate-harness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - terminal: kitty
+            experimental: false
+          - terminal: ghostty
+            experimental: false
+          - terminal: wezterm
+            experimental: false
+          - terminal: warp
+            experimental: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.19.0"
+          cache: npm
+          cache-dependency-path: tests/visual/package-lock.json
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install visual-test dependencies
+        run: npm ci --prefix tests/visual --ignore-scripts
+
+      - name: Install Linux GUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            curl dbus-x11 fonts-dejavu-core imagemagick libgl1-mesa-dri \
+            openbox wmctrl x11-utils xdotool xvfb
+
+      - name: Install Nix for the pinned Ghostty build
+        if: matrix.terminal == 'ghostty'
+        uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Install ${{ matrix.terminal }} from its official source
+        id: terminal
+        run: |
+          tests/visual/install-linux-terminal.sh \
+            "${{ matrix.terminal }}" \
+            "$RUNNER_TEMP/math-terminal-tools" \
+            "$GITHUB_WORKSPACE/artifacts/${{ matrix.terminal }}"
+
+      - name: Capture regular and fullscreen rendering
+        run: |
+          set +e
+          status=0
+          for mode in regular fullscreen; do
+            tests/visual/capture-linux.sh \
+              "${{ matrix.terminal }}" \
+              "${{ steps.terminal.outputs.terminal_bin }}" \
+              "$mode" \
+              "$GITHUB_WORKSPACE/artifacts/${{ matrix.terminal }}" || status=$?
+          done
+          if [[ -f artifacts/${{ matrix.terminal }}/regular.png && \
+                -f artifacts/${{ matrix.terminal }}/fullscreen.png ]]; then
+            montage \
+              artifacts/${{ matrix.terminal }}/regular.png \
+              artifacts/${{ matrix.terminal }}/fullscreen.png \
+              -tile 2x1 -geometry +12+0 \
+              artifacts/${{ matrix.terminal }}/contact-sheet.png
+          fi
+          exit "$status"
+
+      - name: Upload screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: visual-${{ matrix.terminal }}-${{ github.run_id }}
+          path: artifacts/${{ matrix.terminal }}/
+          if-no-files-found: warn
+          retention-days: 14
+
+  iterm2-macos:
+    name: iTerm2 · real pixels
+    needs: validate-harness
+    runs-on: macos-14
+    timeout-minutes: 35
+    continue-on-error: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.19.0"
+          cache: npm
+          cache-dependency-path: tests/visual/package-lock.json
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install visual-test dependencies
+        run: npm ci --prefix tests/visual --ignore-scripts
+
+      - name: Install iTerm2 and screenshot tools
+        run: |
+          brew install --cask iterm2
+          brew install imagemagick
+          {
+            printf 'source=Homebrew cask iterm2\n'
+            defaults read /Applications/iTerm.app/Contents/Info CFBundleShortVersionString || true
+            defaults read /Applications/iTerm.app/Contents/Info CFBundleVersion || true
+          } > iterm2-install.txt
+          mkdir -p artifacts/iterm2
+          mv iterm2-install.txt artifacts/iterm2/
+
+      - name: Capture regular and fullscreen rendering
+        run: |
+          set +e
+          status=0
+          for mode in regular fullscreen; do
+            tests/visual/capture-iterm.sh \
+              "$mode" "$GITHUB_WORKSPACE/artifacts/iterm2" || status=$?
+          done
+          if [[ -f artifacts/iterm2/regular.png && \
+                -f artifacts/iterm2/fullscreen.png ]]; then
+            montage \
+              artifacts/iterm2/regular.png \
+              artifacts/iterm2/fullscreen.png \
+              -tile 2x1 -geometry +12+0 \
+              artifacts/iterm2/contact-sheet.png
+          fi
+          exit "$status"
+
+      - name: Upload screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: visual-iterm2-${{ github.run_id }}
+          path: artifacts/iterm2/
+          if-no-files-found: warn
+          retention-days: 14
